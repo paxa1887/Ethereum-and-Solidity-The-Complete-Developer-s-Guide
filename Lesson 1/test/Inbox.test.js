@@ -8,14 +8,14 @@ let accounts;
 let inbox;
 const bytecode = contractFile.evm.bytecode.object;
 const abi = contractFile.abi;
+const INITIAL_MESSAGE = "Hi there!";
 
 beforeEach(async () => {
     accounts = await web3.eth.getAccounts();
-    console.log('Attempting to deploy from account', accounts[0]);
     inbox = await new web3.eth.Contract(abi)
         .deploy({
             data: bytecode,
-            arguments: ['Hi there!']
+            arguments: [INITIAL_MESSAGE]
         })
         .send({
             from: accounts[0],
@@ -25,6 +25,20 @@ beforeEach(async () => {
 
 describe("Inbox", () => {
     it("deploys a contract", () => {
-        console.log('inbox:', inbox);
+        assert.ok(inbox.options.address);
+    });
+
+    it('has a default message', async () => {
+        const message = await inbox.methods.message().call();
+        assert.equal(message, INITIAL_MESSAGE);
+    });
+
+    it('can change the message', async () => {
+        await inbox.methods.setMessage('Bye').send({
+            from: accounts[0],
+            gas: "1000000"
+        });
+        const message = await inbox.methods.message().call();
+        assert.equal(message, 'Bye');
     });
 });
